@@ -1,63 +1,156 @@
 from typing import List, Dict
+from relationship import Relationship
+from llm_client import ask_llm
+import json
 
 MAX_MESSAGES = 500
-MAX_CHARACTERS = 10000
 
 
 class BotInstance:
+
     def __init__(self):
         self.bot_name: str = ""
         self.bot_description: str = ""
         self.bot_personality: str = ""
         self.participants: List[str] = []
-        self.relationships: Dict[str, str] = {}
 
-        self.memory_messages: List[Dict] = []
-        self.memory_summary: str = ""
-
+        self.llm_provider: str = ""
         self.active: bool = False
 
-    def configure(self, name: str, description: str, personality: str, participants: List[str]):
+        # 🔥 Внутреннее состояние
+        self.mood: str = "neutral"
+        self.relationships: Dict[str, Relationship] = {}
+
+        # 🔥 Общая память
+        self.global_summary: str = ""
+
+        # 🔥 Память по чатам
+        self.chat_memories = {
+            "private": [],
+            "global": []
+        }
+
+    # ------------------------
+    # CONFIGURATION
+    # ------------------------
+
+    def configure(self, name, description, personality,
+                  participants, llm_provider):
+
         self.bot_name = name
         self.bot_description = description
         self.bot_personality = personality
         self.participants = participants
+        self.llm_provider = llm_provider
         self.active = True
 
-    def update_participants(self, participants: List[str]):
-        self.participants = participants
+        for p in participants:
+            if p != self.bot_name:
+                self.relationships[p] = Relationship()
 
-    def add_message(self, role: str, content: str):
-        self.memory_messages.append({
+    # ------------------------
+    # MEMORY
+    # ------------------------
+
+    def add_message(self, chat_type: str, role: str, content: str):
+
+        self.chat_memories[chat_type].append({
             "role": role,
             "content": content
         })
 
-        if len(self.memory_messages) > MAX_MESSAGES:
-            self.memory_messages = self.memory_messages[-MAX_MESSAGES:]
+        if len(self.chat_memories[chat_type]) > MAX_MESSAGES:
+            self.chat_memories[chat_type] = \
+                self.chat_memories[chat_type][-MAX_MESSAGES:]
 
-    def get_total_characters(self):
-        text = self.memory_summary
-        for msg in self.memory_messages:
-            text += msg["content"]
-        return len(text)
+    # ------------------------
+    # RELATIONSHIP REFLECTION
+    # ------------------------
 
-    def build_context(self):
+    def reflect_relationship(self, sender: str, content: str):
+
+        if sender == self.bot_name:
+            return
+
+        if sender not in self.relationships:
+            return
+
+        current = self.relationships[sender]
+
+        prompt = f"""
+Ты — психологический модуль бота {self.bot_name}.
+
+Текущее отношение к {sender}:
+trust: {current.trust}
+anger: {current.anger}
+respect: {current.respect}
+mood: {self.mood}
+
+Сообщение от {sender}:
+"{content}"
+
+Верни JSON:
+{{
+  "trust": 0-1,
+  "anger": 0-1,
+  "respect": 0-1,
+  "mood": "neutral/angry/offended/happy"
+}}
+"""
+
+        response = ask_llm(self.llm_provider, prompt)
+
+        try:
+            data = json.loads(response)
+
+            current.trust = max(0, min(1, data.get("trust", current.trust)))
+            current.anger = max(0, min(1, data.get("anger", current.anger)))
+            current.respect = max(0, min(1, data.get("respect", current.respect)))
+            self.mood = data.get("mood", self.mood)
+
+        except:
+            pass
+
+    # ------------------------
+    # CONTEXT
+    # ------------------------
+
+    def serialize_relationships(self):
+        return {
+            name: rel.to_dict()
+            for name, rel in self.relationships.items()
+        }
+
+    def build_context(self, chat_type: str):
+
         context = f"""
 Имя: {self.bot_name}
 Описание: {self.bot_description}
 Личность: {self.bot_personality}
-Участники чата: {", ".join(self.participants)}
 
-Отношения: {self.relationships}
+Настроение: {self.mood}
+Отношения: {self.serialize_relationships()}
 
-Сводка прошлых сообщений:
-{self.memory_summary}
+Участники: {", ".join(self.participants)}
 
-Последние сообщения:
+Диалог:
 """
 
-        for msg in self.memory_messages:
+        for msg in self.chat_memories[chat_type]:
             context += f"{msg['role']}: {msg['content']}\n"
 
         return context
+
+    # ------------------------
+    # RESPONSE GENERATION
+    # ------------------------
+
+    def generate_response(self, chat_type: str):
+
+        context = self.build_context(chat_type)
+
+        response = ask_llm(self.llm_provider, context)
+
+        self.add_message(chat_type, "assistant", response)
+
+        return response
