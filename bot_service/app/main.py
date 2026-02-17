@@ -20,13 +20,14 @@ async def activate(request: ActivateRequest):
         description=request.description,
         personality=request.personality,
         participants=request.participants,
-        llm_provider=request.llm_provider
+        bot_id=request.bot_id
     )
 
     ws_client = BotWebSocketClient(
         bot=bot,
         backend_url="ws://localhost:8080",
-        bot_id=request.name
+        bot_id=bot.bot_id,
+        bot_name=bot.bot_name
     )
 
     asyncio.create_task(ws_client.connect())

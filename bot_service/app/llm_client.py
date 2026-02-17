@@ -1,5 +1,4 @@
 import os
-import requests
 import openai
 from dotenv import load_dotenv
 
@@ -9,24 +8,10 @@ YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
 YANDEX_CLOUD_FOLDER = os.getenv("YANDEX_CLOUD_FOLDER")
 ASSISTANT_ID = os.getenv("YANDEX_ASSISTANT_ID")
 
-def ask_ollama(prompt: str):
-    response = requests.post(
-            "http://localhost:11434/api/chat",
-            json={
-                "model": "deepseek-r1:8b",
-                "messages": [
-                    {"role": "user", "content": prompt},
-                ],
-                "stream": False
-            }
-        )
-
-    print(response.json())
-    return str(response.json()["message"]["content"])
-
 def ask_yandex(prompt: str):
 
     if not YANDEX_API_KEY:
+
         raise ValueError("YANDEX_API_KEY not set")
 
     client = openai.OpenAI(
@@ -52,16 +37,8 @@ def ask_yandex(prompt: str):
 
     return "[Нет текстового ответа]"
 
-def ask_llm(provider: str, prompt: str):
-    if provider == "ollama":
-        return ask_ollama(prompt)
-
-    elif provider == "yandex":
-        return ask_yandex(prompt)
-
-    else:
-        raise ValueError("Unsupported LLM provider")
-
+def ask_llm(prompt: str):
+    return ask_yandex(prompt)
 
 def summarize_text(provider: str, text: str):
     prompt = f"Сделай краткое резюме диалога:\n{text}"

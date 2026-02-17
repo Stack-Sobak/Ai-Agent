@@ -7,7 +7,7 @@ class ActivateRequest(BaseModel):
     description: str
     personality: str
     participants: List[str]
-    llm_provider: str
+    bot_id: int
 
 
 class WSMessage(BaseModel):

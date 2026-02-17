@@ -14,7 +14,7 @@ class BotInstance:
         self.bot_personality: str = ""
         self.participants: List[str] = []
 
-        self.llm_provider: str = ""
+        self.bot_id: int = 0
         self.active: bool = False
 
         # 🔥 Внутреннее состояние
@@ -35,13 +35,13 @@ class BotInstance:
     # ------------------------
 
     def configure(self, name, description, personality,
-                  participants, llm_provider):
+                  participants, bot_id):
 
         self.bot_name = name
         self.bot_description = description
         self.bot_personality = personality
         self.participants = participants
-        self.llm_provider = llm_provider
+        self.bot_id = bot_id
         self.active = True
 
         for p in participants:
@@ -133,6 +133,9 @@ mood: {self.mood}
 
 Участники: {", ".join(self.participants)}
 
+Правило: отвечай не более 250 символов (включая пробелы), 1–2 предложения. 
+Если нужно — задай 1 уточняющий вопрос.
+
 Диалог:
 """
 
@@ -149,7 +152,7 @@ mood: {self.mood}
 
         context = self.build_context(chat_type)
 
-        response = ask_llm(self.llm_provider, context)
+        response = ask_llm(context)
 
         self.add_message(chat_type, "assistant", response)
 
