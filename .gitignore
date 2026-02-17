@@ -1,0 +1,11 @@
+﻿# env files
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.envrc
