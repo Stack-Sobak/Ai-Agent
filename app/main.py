@@ -1,9 +1,10 @@
+import asyncio
+
 from fastapi import FastAPI
 
-from agent import BotInstance
-from schemas import ActivateRequest
-from websocket_client import BotWebSocketClient
-import asyncio
+from .agent import BotInstance
+from .schemas import ActivateRequest
+from .websocket_client import BotWebSocketClient
 
 app = FastAPI()
 bot = BotInstance()
@@ -25,7 +26,6 @@ async def activate(request: ActivateRequest):
 
     ws_client = BotWebSocketClient(
         bot=bot,
-        backend_url="ws://localhost:8080",
         bot_id=bot.bot_id,
         bot_name=bot.bot_name
     )
@@ -39,7 +39,3 @@ async def activate(request: ActivateRequest):
 async def deactivate():
     bot.active = False
     return {"status": "deactivated"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app)

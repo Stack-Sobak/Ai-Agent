@@ -1,6 +1,6 @@
 from typing import List, Dict
-from relationship import Relationship
-from llm_client import ask_llm
+from .relationship import Relationship
+from .llm_client import ask_yandex
 import json
 
 MAX_MESSAGES = 500
@@ -17,22 +17,15 @@ class BotInstance:
         self.bot_id: int = 0
         self.active: bool = False
 
-        # 🔥 Внутреннее состояние
         self.mood: str = "neutral"
         self.relationships: Dict[str, Relationship] = {}
 
-        # 🔥 Общая память
         self.global_summary: str = ""
 
-        # 🔥 Память по чатам
         self.chat_memories = {
             "private": [],
             "global": []
         }
-
-    # ------------------------
-    # CONFIGURATION
-    # ------------------------
 
     def configure(self, name, description, personality,
                   participants, bot_id):
@@ -48,10 +41,6 @@ class BotInstance:
             if p != self.bot_name:
                 self.relationships[p] = Relationship()
 
-    # ------------------------
-    # MEMORY
-    # ------------------------
-
     def add_message(self, chat_type: str, role: str, content: str):
 
         self.chat_memories[chat_type].append({
@@ -62,10 +51,6 @@ class BotInstance:
         if len(self.chat_memories[chat_type]) > MAX_MESSAGES:
             self.chat_memories[chat_type] = \
                 self.chat_memories[chat_type][-MAX_MESSAGES:]
-
-    # ------------------------
-    # RELATIONSHIP REFLECTION
-    # ------------------------
 
     def reflect_relationship(self, sender: str, content: str):
 
@@ -98,7 +83,7 @@ mood: {self.mood}
 }}
 """
 
-        response = ask_llm(self.llm_provider, prompt)
+        response = ask_yandex(prompt)
 
         try:
             data = json.loads(response)
@@ -111,9 +96,6 @@ mood: {self.mood}
         except:
             pass
 
-    # ------------------------
-    # CONTEXT
-    # ------------------------
 
     def serialize_relationships(self):
         return {
@@ -152,7 +134,7 @@ mood: {self.mood}
 
         context = self.build_context(chat_type)
 
-        response = ask_llm(context)
+        response = ask_yandex(context)
 
         self.add_message(chat_type, "assistant", response)
 

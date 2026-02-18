@@ -1,0 +1,20 @@
+﻿services:
+  bot1:
+    build: .
+    container_name: bot1
+    env_file:
+      - .env.bot1
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+
+  bot2:
+    build: .
+    container_name: bot2
+    env_file:
+      - .env.bot2
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
