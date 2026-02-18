@@ -2,6 +2,8 @@ from typing import List, Dict
 from .relationship import Relationship
 from .llm_client import ask_yandex
 import json
+import re
+
 
 MAX_MESSAGES = 500
 
@@ -136,6 +138,26 @@ mood: {self.mood}
 
         response = ask_yandex(context)
 
+        response = self.sanitize_text(response)
+
         self.add_message(chat_type, "assistant", response)
 
         return response
+
+    def sanitize_text(self, text: str) -> str:
+        if not text:
+            return ""
+
+        text = text.replace("\r", "")
+
+        text = text.replace("\n", " ")
+
+        text = re.sub(r'[\x00-\x1f\x7f]', '', text)
+
+        text = re.sub(r'\s+', ' ', text)
+
+        return text.strip()
+
+
+    def get_info(self):
+        return "Имя + ", self.bot_name, ", Айди: ", self.bot_id

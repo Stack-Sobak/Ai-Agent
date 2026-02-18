@@ -32,6 +32,8 @@ async def activate(request: ActivateRequest):
 
     asyncio.create_task(ws_client.connect())
 
+    print("Бот активирован. Информация: ", bot.get_info())
+
     return {"status": "activated"}
 
 
